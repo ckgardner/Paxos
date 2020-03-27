@@ -6,6 +6,7 @@ import(
 	"fmt"
 	"strconv"
 )
+
 // Prepare is not an RPC
 func(replica *Replica) Prepare(req *PrepareRequest, res *PrepareResponse){
 	replica.Lock.Lock()
@@ -69,6 +70,7 @@ func(replica *Replica) Decide(req *DecideRequest, res *Nothing){
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
 	time.Sleep(1000 * time.Millisecond)
+	decisionmap := make(map[string]chan(string))
 
 	log.Printf("[%v] Decide: called with Command- %v", req.Slot, req.Command)
 	log.Printf("Requests promise - %v", req.Command.SequenceN)
