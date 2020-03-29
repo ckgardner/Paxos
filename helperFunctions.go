@@ -8,22 +8,22 @@ import(
 	"net/rpc"
 )
 // Propose function
-func(replica *Replica) Propose(req *DecideRequest, item Slot) error{
+func Propose(replica *Replica, item Slot) error{
 	finished := false
 	for !finished{
 		fmt.Println("Starting Proposal Loop")
-		fmt.Println("Highest slot:", replica.Slots[req.Slot].Promise)
+		fmt.Println("Highest slot:", replica.HighestSlot.HighestN)
 		var data Slot
-		data.Decided = replica.Slots[req.Slot].Decided
-		item.Decided = replica.Slots[req.Slot].Decided
-		replica.Slots[req.Slot].Accepted.Command = item.Command.Command
+		data.HighestN = replica.HighestSlot.HighestN
+		item.HighestN = replica.HighestSlot.HighestN
+		replica.Slots[item.HighestN].Accepted.Command = item.Command.Command
 		seen := -1
 		completed := false
 		for !completed{
-			data.Command.Command = replica.Slots[req.Slot].Accepted.Command
+			data.Command.Command = replica.HighestSlot.Accepted.Command
 			item.HighestN = seen + 1
 			data.HighestN = seen + 1
-			replica.Slots[req.Slot].Accepted.SequenceN = seen + 1
+			replica.HighestSlot.Accepted.SequenceN = seen + 1
 			totalOk := 0
 			totalNot := 0
 			for _, add := range replica.Cell{
@@ -42,7 +42,7 @@ func(replica *Replica) Propose(req *DecideRequest, item Slot) error{
 							seen = prepOk.HighestN
 						}
 						if len(prepOk.Command.Command) > 0{
-							replica.Slots[req.Slot].Accepted.Command = prepOk.Command.Command
+							replica.HighestSlot.Accepted.Command = prepOk.Command.Command
 						}
 					}
 				}
@@ -87,13 +87,13 @@ func(replica *Replica) Propose(req *DecideRequest, item Slot) error{
 			}
 			completed = true
 		}
-		replica.Slots[req.Slot].HighestN = -1
+		replica.HighestSlot.HighestN = -1
 	}
 	return nil
 }
 
 // Prepare is not an RPC
-func(replica *Replica) Prepare(req *PrepareRequest, res *PrepareResponse){
+func(replica *Replica) Prepare(req *PrepareRequest, res *PrepareResponse) error{
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
 	time.Sleep(1000 * time.Millisecond)
@@ -124,11 +124,11 @@ func(replica *Replica) Prepare(req *PrepareRequest, res *PrepareResponse){
 		log.Println("Preapre is rejecting because it has already promised", req.Slot, req.Seq, slot.Promise)
 	}
 	time.Sleep(1000 * time.Millisecond)
-	return
+	return nil;
 }
 
 // Accept is not an RPC
-func(replica *Replica) Accept(req *PrepareRequest, res *PrepareResponse){
+func(replica *Replica) Accept(req *PrepareRequest, res *PrepareResponse) error{
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
 	log.Println("=====", replica.Address, "Accepting..")
@@ -147,11 +147,11 @@ func(replica *Replica) Accept(req *PrepareRequest, res *PrepareResponse){
 		res.Promise = slot.Promise
 	}
 	time.Sleep(1000 * time.Millisecond)
-	return
+	return nil;
 }
 
 // Decide is not an  RPC
-func(replica *Replica) Decide(req *DecideRequest, res *Nothing){
+func(replica *Replica) Decide(req *DecideRequest, res *Nothing)error{
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
 	time.Sleep(1000 * time.Millisecond)
@@ -204,6 +204,7 @@ func(replica *Replica) Decide(req *DecideRequest, res *Nothing){
 		}
 	}
 	time.Sleep(1000 * time.Millisecond)
+	return nil;
 }
 
 func call(address string, method string, request interface{}, reply interface{}) error {

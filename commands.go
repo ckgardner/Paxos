@@ -21,13 +21,38 @@ func mainCommands(replica *Replica) {
 		if len(parts) == 0 {
 			continue
 		}
-		//var nothing *Nothing
+		var nothing *Nothing
 		switch parts[0] {
 			case "help":
 				fmt.Println("Usable Commands:")
 				fmt.Println("get, put, delete, dump, -chatty=(0-2), -latency=[n, 2n]")
 
 			case "put":
+				if len(parts) == 3{
+
+					pair := Pair{parts[1], parts[2]}
+
+					if err := call(replica.Address,"Replica.Set", pair, &nothing); err != nil {
+						log.Printf("replica.Set: %v", err)
+					}else{
+
+						log.Printf("This was inserted to the Node: {%v:%v}", pair.Key, pair.Value)
+					}
+
+					var item Slot
+					item.Accepted.Tag = replica.HighestSlot.HighestN 
+					item.Command.Command = line
+					item.Command.Address = replica.Address
+
+					if err := Propose(replica,item); err != nil{
+						log.Println("Did not set key/value pair")
+					}else{
+						fmt.Println("Complete")
+					}
+
+				}else{
+					fmt.Println("Put needs <key> <value> pair")
+				 }
 
 			case "get":
 

@@ -16,6 +16,7 @@ type Replica struct {
 	Listeners		map[string]chan string
 	Lock			sync.Mutex
 	Kill			chan struct{}
+	HighestSlot		Slot
 }
 
 // Pair is a Key-Value pair
@@ -44,7 +45,7 @@ type Command struct {
 
 // Sequence struct
 type Sequence struct{
-	Number	int
+	Number		int
 	Address		string
 }
 // PrepareRequest struct
