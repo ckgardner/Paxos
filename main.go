@@ -15,18 +15,28 @@ func main() {
 	replica := new(Replica)
 	replica.Database = make(map[string]string)
 	replica.Kill = make(chan struct{})
-	args := os.Args[1:]
+	replica.HighestSlot.HighestN = 0
+	replica.ToApply = 0
+	replica.HighestSlot.Command.SequenceN = -1
+	args := os.Args
+	args = os.Args[1:]
 	if len(args) < 3{
 		log.Fatalln("Needs 3 arguments")
+	}else{
+
+		replica.IP = getLocalAddress()
+		replica.Port = ":" + args[0]
+		replica.Address = string(replica.IP) + string(replica.Port)
+		// replica.Cell = args
+		fmt.Println("My Replica Address: ", replica.Address)
+		for _,port := range args{
+			replica.Cell = append(replica.Cell, replica.IP + ":" + port)
+		}
 	}
 	replica.HighestSlot.HighestN = 0
 	replica.HighestSlot.Accepted.SequenceN = -1
 
-	replica.IP = getLocalAddress()
-	replica.Port = ":" + args[0]
-	replica.Address = string(replica.IP) + string(replica.Port)
-	replica.Cell = args
-	fmt.Println("My Replica Address: ", replica.Address)
+
 
 	go func(){
 		<-replica.Kill

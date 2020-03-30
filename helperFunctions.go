@@ -12,12 +12,11 @@ func Propose(replica *Replica, item Slot) error{
 	finished := false
 	for !finished{
 		fmt.Println("Starting Proposal Loop")
-		fmt.Println("Highest slot:", replica.HighestSlot.Accepted.SequenceN)
+		fmt.Println("Highest slot:", replica.ToApply)
 		var data Slot
-		data.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN
-		item.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN
-		fmt.Println( "#1", item.Accepted.SequenceN)
-		replica.Slots[item.Accepted.SequenceN].Accepted.Command = item.Command.Command
+		data.HighestN = replica.ToApply
+		item.HighestN = replica.ToApply
+		replica.HighestSlot.Accepted.Command = item.Command.Command
 		seen := -1
 		completed := false
 		for !completed{
@@ -28,10 +27,10 @@ func Propose(replica *Replica, item Slot) error{
 			totalOk := 0
 			totalNot := 0
 			for _, add := range replica.Cell{
-				time.Sleep(1000 * time.Millisecond)
+				time.Sleep(1000 * time.Millisecond) // latency
 				var prepOk Slot
 				fmt.Println("Asking", add)
-				if err := call(add, "Node.Prepare", data, &prepOk); err != nil{
+				if err := call(add, "Replica.Prepare", data, &prepOk); err != nil{
 					log.Printf("Bad prepare from %v", add)
 				} else{
 					if prepOk.Decided{
@@ -53,7 +52,7 @@ func Propose(replica *Replica, item Slot) error{
 			}
 			if totalNot > len(replica.Cell)/2{
 				fmt.Println("Majority declined... retry")
-				time.Sleep(1000 * time.Millisecond)
+				time.Sleep(1000 * time.Millisecond) // latency
 				continue
 			}
 			fmt.Println("Received a prepare majority. Accepting..")
@@ -62,7 +61,7 @@ func Propose(replica *Replica, item Slot) error{
 			totalNot = 0
 			for _, add := range replica.Cell{
 				time.Sleep(1000 * time.Millisecond)
-				if err := call(add, "Node.Accept", data, &prepOk); err != nil{
+				if err := call(add, "Replica.Accept", data, &prepOk); err != nil{
 					log.Printf("Bad decide call from %v", add)
 				}else{
 					if prepOk.Decided {
@@ -76,7 +75,7 @@ func Propose(replica *Replica, item Slot) error{
 			if totalOk > len(replica.Cell)/2{
 				fmt.Println("Got an accept majority. Deciding..")
 				for _, add := range replica.Cell{
-					if err := call(add, "Node.Decide", data, struct{}{}); err != nil{
+					if err := call(add, "Replica.Decide", data, struct{}{}); err != nil{
 						log.Printf("bad decide call from %v", add)
 					}
 				}
@@ -97,7 +96,7 @@ func Propose(replica *Replica, item Slot) error{
 func(replica *Replica) Prepare(req *PrepareRequest, res *PrepareResponse) error{
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
-	time.Sleep(1000 * time.Millisecond)
+	// time.Sleep(1000 * time.Millisecond)
 	log.Println("Prepare called with:", req.Slot, req.Seq)
 	if len(replica.Slots) <= req.Slot{
 		for i := len(replica.Slots); i <= req.Slot; i++{
@@ -122,9 +121,9 @@ func(replica *Replica) Prepare(req *PrepareRequest, res *PrepareResponse) error{
 			log.Panicln("Prepare promising without a command:", req.Slot, req.Seq)
 		}
 	}else{
-		log.Println("Preapre is rejecting because it has already promised", req.Slot, req.Seq, slot.Promise)
+		log.Println("Prepare is rejecting because it has already promised", req.Slot, req.Seq, slot.Promise)
 	}
-	time.Sleep(1000 * time.Millisecond)
+	// time.Sleep(1000 * time.Millisecond)
 	return nil;
 }
 

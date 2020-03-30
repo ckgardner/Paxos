@@ -10,7 +10,7 @@ import (
 
 func mainCommands(replica *Replica) {
 	log.Printf("Paxos is ready")
-	log.Printf("Command options: help, get, put, delete, dump, -chatty=(0-2), -latency=[n, 2n], quit")
+	log.Printf("Type help for a list of commands")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -22,10 +22,11 @@ func mainCommands(replica *Replica) {
 			continue
 		}
 		// var nothing *Nothing
+
 		switch parts[0] {
 			case "help":
 				fmt.Println("Usable Commands:")
-				fmt.Println("get, put, delete, dump, -chatty=(0-2), -latency=[n, 2n]")
+				fmt.Println("get, put, delete, dump, quit")
 
 			case "put":
 				if len(parts) == 3{
@@ -43,7 +44,6 @@ func mainCommands(replica *Replica) {
 					item.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN 
 					item.Command.Command = line
 					item.Command.Address = replica.Address
-
 					if err := Propose(replica,item); err != nil{
 						log.Println("Did not set key/value pair")
 					}else{
@@ -60,8 +60,11 @@ func mainCommands(replica *Replica) {
 
 			case "dump":
 				log.Printf("Port:%v", replica.Port)
-				log.Printf("Cell:%v", replica.Cell)
-				log.Println("Database:")
+				log.Printf("Cell: =============")
+				for index := range replica.Cell{
+					fmt.Println("\t"+string(replica.Cell[index]))
+				}
+				log.Println("Database: ============")
 				for key, value := range replica.Database{
 					log.Println(key, "->", value)
 				}
