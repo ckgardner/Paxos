@@ -16,7 +16,7 @@ func main() {
 	replica.Database = make(map[string]string)
 	replica.Kill = make(chan struct{})
 	replica.HighestSlot.HighestN = 0
-	replica.ToApply = -1
+	replica.ToApply = 0
 	replica.HighestSlot.Command.SequenceN = -1
 	args := os.Args
 	args = os.Args[1:]
@@ -27,8 +27,11 @@ func main() {
 		replica.IP = getLocalAddress()
 		replica.Port = ":" + args[0]
 		replica.Address = string(replica.IP) + string(replica.Port)
-		replica.Cell = args
+		// replica.Cell = args
 		fmt.Println("My Replica Address: ", replica.Address)
+		for _,port := range args{
+			replica.Cell = append(replica.Cell, replica.IP + ":" + port)
+		}
 	}
 
 
