@@ -21,7 +21,7 @@ func mainCommands(replica *Replica) {
 		if len(parts) == 0 {
 			continue
 		}
-		var nothing *Nothing
+		// var nothing *Nothing
 		switch parts[0] {
 			case "help":
 				fmt.Println("Usable Commands:")
@@ -30,17 +30,17 @@ func mainCommands(replica *Replica) {
 			case "put":
 				if len(parts) == 3{
 
-					pair := Pair{parts[1], parts[2]}
+					// pair := Pair{parts[1], parts[2]}
 
-					if err := call(replica.Address,"Replica.Set", pair, &nothing); err != nil {
-						log.Printf("replica.Set: %v", err)
-					}else{
+					// if err := call(replica.Address,"Replica.Set", pair, &nothing); err != nil {
+					// 	log.Printf("replica.Set: %v", err)
+					// }else{
 
-						log.Printf("This was inserted to the Node: {%v:%v}", pair.Key, pair.Value)
-					}
+					// 	log.Printf("This was inserted to the Node: {%v:%v}", pair.Key, pair.Value)
+					// }
 
 					var item Slot
-					item.Accepted.Tag = replica.HighestSlot.HighestN 
+					item.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN 
 					item.Command.Command = line
 					item.Command.Address = replica.Address
 

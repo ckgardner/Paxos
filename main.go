@@ -19,6 +19,8 @@ func main() {
 	if len(args) < 3{
 		log.Fatalln("Needs 3 arguments")
 	}
+	replica.HighestSlot.HighestN = 0
+	replica.HighestSlot.Accepted.SequenceN = -1
 
 	replica.IP = getLocalAddress()
 	replica.Port = ":" + args[0]

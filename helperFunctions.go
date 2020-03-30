@@ -12,17 +12,18 @@ func Propose(replica *Replica, item Slot) error{
 	finished := false
 	for !finished{
 		fmt.Println("Starting Proposal Loop")
-		fmt.Println("Highest slot:", replica.HighestSlot.HighestN)
+		fmt.Println("Highest slot:", replica.HighestSlot.Accepted.SequenceN)
 		var data Slot
-		data.HighestN = replica.HighestSlot.HighestN
-		item.HighestN = replica.HighestSlot.HighestN
-		replica.Slots[item.HighestN].Accepted.Command = item.Command.Command
+		data.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN
+		item.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN
+		fmt.Println( "#1", item.Accepted.SequenceN)
+		replica.Slots[item.Accepted.SequenceN].Accepted.Command = item.Command.Command
 		seen := -1
 		completed := false
 		for !completed{
 			data.Command.Command = replica.HighestSlot.Accepted.Command
-			item.HighestN = seen + 1
-			data.HighestN = seen + 1
+			item.Accepted.SequenceN = seen + 1
+			data.Accepted.SequenceN = seen + 1
 			replica.HighestSlot.Accepted.SequenceN = seen + 1
 			totalOk := 0
 			totalNot := 0
