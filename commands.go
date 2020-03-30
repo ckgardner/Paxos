@@ -10,7 +10,7 @@ import (
 
 func mainCommands(replica *Replica) {
 	log.Printf("Paxos is ready")
-	log.Printf("Command options: help, get, put, delete, dump, -chatty=(0-2), -latency=[n, 2n], quit")
+	log.Printf("Type help for a list of commands")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -21,23 +21,14 @@ func mainCommands(replica *Replica) {
 		if len(parts) == 0 {
 			continue
 		}
-		var nothing *Nothing
+
 		switch parts[0] {
 			case "help":
 				fmt.Println("Usable Commands:")
-				fmt.Println("get, put, delete, dump, -chatty=(0-2), -latency=[n, 2n]")
+				fmt.Println("get, put, delete, dump, quit")
 
 			case "put":
 				if len(parts) == 3{
-
-					pair := Pair{parts[1], parts[2]}
-
-					if err := call(replica.Address,"Replica.Set", pair, &nothing); err != nil {
-						log.Printf("replica.Set: %v", err)
-					}else{
-
-						log.Printf("This was inserted to the Node: {%v:%v}", pair.Key, pair.Value)
-					}
 
 					var item Slot
 					item.Accepted.Tag = replica.HighestSlot.HighestN 

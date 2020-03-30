@@ -12,11 +12,11 @@ func Propose(replica *Replica, item Slot) error{
 	finished := false
 	for !finished{
 		fmt.Println("Starting Proposal Loop")
-		fmt.Println("Highest slot:", replica.HighestSlot.HighestN)
+		fmt.Println("Highest slot:", replica.ToApply)
 		var data Slot
-		data.HighestN = replica.HighestSlot.HighestN
-		item.HighestN = replica.HighestSlot.HighestN
-		replica.Slots[item.HighestN].Accepted.Command = item.Command.Command
+		data.HighestN = replica.ToApply
+		item.HighestN = replica.ToApply
+		replica.HighestSlot.Accepted.Command = item.Command.Command
 		seen := -1
 		completed := false
 		for !completed{
@@ -27,7 +27,7 @@ func Propose(replica *Replica, item Slot) error{
 			totalOk := 0
 			totalNot := 0
 			for _, add := range replica.Cell{
-				time.Sleep(1000 * time.Millisecond)
+				time.Sleep(1000 * time.Millisecond) // latency
 				var prepOk Slot
 				fmt.Println("Asking", add)
 				if err := call(add, "Node.Prepare", data, &prepOk); err != nil{
@@ -52,7 +52,7 @@ func Propose(replica *Replica, item Slot) error{
 			}
 			if totalNot > len(replica.Cell)/2{
 				fmt.Println("Majority declined... retry")
-				time.Sleep(1000 * time.Millisecond)
+				time.Sleep(1000 * time.Millisecond) // latency
 				continue
 			}
 			fmt.Println("Received a prepare majority. Accepting..")
