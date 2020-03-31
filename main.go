@@ -4,6 +4,7 @@ import (
 	"os"
 	"fmt"
 	"log"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -36,7 +37,54 @@ func main() {
 	replica.HighestSlot.HighestN = 0
 	replica.HighestSlot.Accepted.SequenceN = -1
 
+	/* 	path := replica.Cell
+		options :=
+			"?" + "_busy_timout=10000" +
+				"&" + "_foreign_keys=ON" +
+				"&" + "_locking_mode=NORMAL" +
+				"&" + "mode=rw" + 
+				"&" + "_synchronous=NORMAL"
 
+		db, err := sql.Open("sqlite3", path + options)
+		if err != nil{
+			log.Fatalf("Opening DB error: %v", err)
+		}
+		defer db.Close()
+
+		create_stmt := `
+		CREATE TABLE IF NOT EXISTS slots (
+			id	integer primary key,
+			data text
+		`)
+
+		if _, err := db.Exec(create_stmt); err != nil{
+			log.Fatalf("running create stmt: %v", err)
+		}
+		fmt.Println("DB CREATION SUCCESS!")
+
+		slot := &Slot{
+			ID: 1,
+			Decided: true,
+			Command: "Put apple pie",
+			Promise: 5,
+			
+		}
+
+		raw, err := json.MarshalIndent(slot, "", "    ")
+		if err != nil{
+			log.Fatalf("Encoding slot: %v", err)
+		}
+		fmt.Println(string(raw))
+
+		//PARSE
+		slot2 := new(Slot)
+		if err = json.Unmarshal(raw, slot2); err != nil{
+			log.Fatalf("decoding json: %v", err)
+		}
+
+		// Create all Database values as empty values and then just update from there
+		// Select * by id to read all slots in.
+	*/
 
 	go func(){
 		<-replica.Kill

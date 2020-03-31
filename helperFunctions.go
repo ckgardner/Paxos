@@ -7,6 +7,9 @@ import(
 	"strconv"
 	"net/rpc"
 )
+// Prepare, Accept, and Decide need to access the DB instead of map.
+// Propose doesn't modify anything with DB. It does it through RPC calls
+
 // Propose function
 func Propose(replica *Replica, item Slot) error{
 	finished := false
