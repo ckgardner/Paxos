@@ -58,20 +58,15 @@ func mainCommands(replica *Replica) {
 				for key, value := range replica.Database{
 					log.Println(key, "->", value)
 				}
-				undecided := len(replica.Slots)
-				for i := 0; i <len(replica.Slots); i++{
-					if !replica.Slots[i].Decided{
-						undecided = i
-						break
-					}
-				}
+				undecided := replica.HighestSlot.HighestN
+
 				log.Println("Next undecided slot is:", undecided)
-				for slot := range replica.Slots{
+				for slot := range replica.Cell{
 					log.Println("slot=", slot)
 				}
 
 			case "quit":
-				if len(replica.Slots) == 1{
+				if len(replica.Cell) == 1{
 					fmt.Println("Dissolving from slot")
 				}
 				replica.Kill <- struct{}{}

@@ -6,10 +6,10 @@ import (
 
 // Replica struct
 type Replica struct {
-	IP          string
+	IP          string 
 	Port        string
-	Database    map[string]string
-	Slots       []Slot
+	Database    map[string]string 
+	// Slots       []Slot
 	Address     string
 	Cell        []string
 	ToApply     int
@@ -46,25 +46,6 @@ type Command struct {
 type Sequence struct {
 	Number  int
 	Address string
-}
-
-// PrepareRequest struct
-type PrepareRequest struct {
-	Slot int
-	Seq  Sequence
-}
-
-// DecideRequest struct
-type DecideRequest struct {
-	Slot    int
-	Command Command
-}
-
-// PrepareResponse struct
-type PrepareResponse struct {
-	Okay    bool
-	Promise Sequence
-	Command Command
 }
 
 // Nothing struct
