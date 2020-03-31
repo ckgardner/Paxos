@@ -27,11 +27,12 @@ type Pair struct {
 
 // Slot is used when accepted
 type Slot struct {
-	Decided  bool
-	Command  Command
-	Promise  Sequence
-	Accepted Command
-	HighestN int
+	//ID		int `json:"id"`
+	Decided  	bool 		`json:"decided"`
+	Command  	Command 	`json:"command"`
+	Promise  	Sequence 	`json:"sequence"`
+	Accepted 	Command 	`json:"accepted"`
+	HighestN 	int 		`json:"highest_n"`
 }
 
 // Command struct

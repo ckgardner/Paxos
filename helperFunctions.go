@@ -7,6 +7,11 @@ import (
 	"strings"
 	"time"
 )
+<<<<<<< HEAD
+=======
+// Prepare, Accept, and Decide need to access the DB instead of map.
+// Propose doesn't modify anything with DB. It does it through RPC calls
+>>>>>>> 804ce2335d510f53343beccad4ba4b6623818105
 
 // Propose function
 func Propose(replica *Replica, item Slot) error {
@@ -23,8 +28,8 @@ func Propose(replica *Replica, item Slot) error {
 		completed := false
 		for !completed {
 			data.Command.Command = replica.HighestSlot.Accepted.Command
-			item.HighestN = seen + 1
-			data.HighestN = seen + 1
+			item.Accepted.SequenceN = seen + 1
+			data.Accepted.SequenceN = seen + 1
 			replica.HighestSlot.Accepted.SequenceN = seen + 1
 			totalOk := 0
 			totalNot := 0
