@@ -38,11 +38,11 @@ func mainCommands(replica *Replica) {
 					if err := Propose(replica,item); err != nil{
 						log.Println("Did not set key/value pair")
 					}else{
-						fmt.Println("Complete")
+						log.Println("Complete")
 					}
 
 				}else{
-					fmt.Println("Put needs <key> <value> pair")
+					log.Println("Put needs <key> <value> pair")
 				 }
 
 			case "get":
@@ -60,9 +60,9 @@ func mainCommands(replica *Replica) {
 
 				log.Println("Next undecided slot is:", undecided)
 
-				log.Println("Cell: ============")
-				for i, value := range replica.Cell{
-					log.Printf("\t[%v] -> %v\n", int(i) , value)
+				log.Println("DB: ============")
+				for key, value := range replica.Database{
+					log.Printf("\t[%v] -> %v\n", key , value)
 				}
 
 			case "quit":

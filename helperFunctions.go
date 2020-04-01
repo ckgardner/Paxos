@@ -90,7 +90,7 @@ func Propose(replica *Replica, item Slot) error {
 
 			completed = true
 		}
-		replica.ToApply= -1
+		replica.HighestSlot.Command.SequenceN ++
 	}
 	return nil
 }
@@ -146,16 +146,17 @@ func (replica *Replica) Accept(req Slot, res *Slot) error {
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
 	log.Println("=====", replica.Address, "Accepting..")
-	
-	if req.Command.SequenceN >= replica.HighestSlot.HighestN {
+	log.Printf("req.HighestN: %v, replica HighestN: %v", req.Command.SequenceN, replica.HighestSlot.HighestN);
+	if req.Command.SequenceN >= replica.ToApply {
 
-		log.Println("Sequence", req.Command.SequenceN , ">= highest promised", replica.HighestSlot.HighestN)
+		log.Println("Sequence", req.Command.SequenceN , ">= highest promised", replica.ToApply)
 		replica.ToApply = req.Command.SequenceN 
 		replica.HighestSlot.HighestN = req.Command.SequenceN
 		replica.HighestSlot.Command.Command = req.Command.Command
 
 		*res = replica.HighestSlot
 		res.Decided = true
+		req.Command.SequenceN ++
 	} else {
 		log.Println("Sequence", req.Command.SequenceN , "is NOT >= highest promised", replica.HighestSlot.HighestN)
 		res.Decided = false
@@ -177,6 +178,7 @@ func (replica *Replica) Decide(req Slot, res *Nothing) error {
 	replica.HighestSlot.Command.SequenceN = -1
 
 	commands := strings.Fields(req.Command.Command)
+	log.Printf("cell: %v, highestN: %v", replica.Cell, req.HighestN)
 	if len(replica.Cell) == req.HighestN{
 		
 		replica.HighestSlot.HighestN ++
@@ -186,14 +188,14 @@ func (replica *Replica) Decide(req Slot, res *Nothing) error {
 	
 		}else{
 
-			replica.Cell = append(replica.Cell,req.Command.Command)
+			replica.Cell = append(replica.Cell, commands[1]+commands[2])
 	
 		}
 		switch commands[0]{
 		
 		case "put" :
 			replica.Database[commands[1]] = commands[2]
-			fmt.Printf("Adding to key/value pair: [%v] set to [%v]", commands[1], commands[2])
+			log.Printf("Adding to key/value pair: [%v] to [%v]", commands[1], commands[2])
 			
 		case "get":
 			value := replica.Database[commands[1]]
