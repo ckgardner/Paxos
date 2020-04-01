@@ -32,7 +32,7 @@ func mainCommands(replica *Replica) {
 				if len(parts) == 3{
 
 					var item Slot
-					item.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN 
+					item.HighestN = replica.ToApply 
 					item.Command.Command = line
 					item.Command.Address = replica.Address
 					if err := Propose(replica,item); err != nil{
@@ -61,8 +61,8 @@ func mainCommands(replica *Replica) {
 				log.Println("Next undecided slot is:", undecided)
 
 				log.Println("DB: ============")
-				for key, value := range replica.Database{
-					log.Printf("\t[%v] -> %v\n", key , value)
+				for i, value := range replica.Cell{
+					log.Printf("\t|%v| %v|\n", i , value)
 				}
 
 			case "quit":

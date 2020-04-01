@@ -14,18 +14,18 @@ func Propose(replica *Replica, item Slot) error {
 	var nothing Nothing
 	for !finished {
 		fmt.Println("Starting Proposal Loop")
-		fmt.Println("Highest slot:", replica.HighestSlot.HighestN)
+		fmt.Println("Highest slot:", replica.ToApply)
 		var data Slot
-		data.HighestN = replica.HighestSlot.HighestN
-		item.HighestN = replica.HighestSlot.HighestN
+		data.HighestN = replica.ToApply
+		item.HighestN = replica.ToApply
 		replica.HighestSlot.Accepted.Command = item.Command.Command
 		seen := -1
 		completed := false
 		for !completed {
 			data.Command.Command = replica.HighestSlot.Accepted.Command
-			item.HighestN = seen + 1
-			data.HighestN = seen + 1
-			replica.HighestSlot.Accepted.SequenceN = seen + 1
+			item.Promise.Number = seen + 1
+			data.Promise.Number = seen + 1
+			replica.HighestSlot.Promise.Number= seen + 1
 			totalOk := 0
 			totalNot := 0
 			for _, add := range replica.portAddress {
@@ -40,8 +40,8 @@ func Propose(replica *Replica, item Slot) error {
 					} else {
 						totalNot++
 						fmt.Printf("%v rejected \n", add)
-						if prepOk.HighestN > seen {
-							seen = prepOk.HighestN
+						if prepOk.Promise.Number > seen {
+							seen = prepOk.Promise.Number
 						}
 						if len(prepOk.Command.Command) > 0 {
 							replica.HighestSlot.Accepted.Command = prepOk.Command.Command
@@ -90,7 +90,7 @@ func Propose(replica *Replica, item Slot) error {
 
 			completed = true
 		}
-		replica.HighestSlot.Command.SequenceN ++
+		replica.HighestSlot.Prep = -1
 	}
 	return nil
 }
@@ -104,16 +104,16 @@ func (replica *Replica) Prepare(req Slot, res *Slot) error {
 	time.Sleep(1000 * time.Millisecond)
 	log.Println("Prepare called with:", req.HighestN)
 
-	if req.HighestN >= replica.ToApply  {
-		if req.Command.SequenceN > replica.ToApply{
-			fmt.Println(req.Command.SequenceN, replica.ToApply, " Was ACCPETED")
-			replica.ToApply = req.HighestN
+	if req.HighestN >= replica.ToApply {
+		if req.Promise.Number > replica.HighestSlot.Prep{
+			fmt.Println("Sequence:",req.Promise.Number, replica.HighestSlot.Prep, " Was ACCPETED")
+			replica.HighestSlot.Prep = req.Promise.Number
 			req.Accepted.Command = req.Command.Command
 			res.Decided = true
 			
 		} else{
 
-			fmt.Println(req.Command.SequenceN, replica.ToApply, " Was REJECTED ")
+			fmt.Println(req.Promise.Number, replica.HighestSlot.Prep, " Was REJECTED ")
 			*res = replica.HighestSlot
 			res.HighestN = replica.ToApply
 			res.Command.Command = " "
@@ -127,12 +127,12 @@ func (replica *Replica) Prepare(req Slot, res *Slot) error {
 		if req.Command.Command == replica.Cell[req.HighestN]{
 
 			res.Decided = true
-			log.Println("ACCPETD:", req.HighestN, replica.Cell[req.HighestN])
+			log.Println("ACCPETD:", req.Promise.Number, replica.Cell[req.HighestN])
 
 		}else{
 
 			res.Decided = false
-			log.Println("REJECTED:", req.HighestN, replica.Cell[req.HighestN])
+			log.Println("REJECTED:", req.Promise.Number, replica.Cell[req.HighestN])
 		}
 
 	}
@@ -146,19 +146,18 @@ func (replica *Replica) Accept(req Slot, res *Slot) error {
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
 	log.Println("=====", replica.Address, "Accepting..")
-	log.Printf("req.HighestN: %v, replica HighestN: %v", req.Command.SequenceN, replica.HighestSlot.HighestN);
-	if req.Command.SequenceN >= replica.ToApply {
-
-		log.Println("Sequence", req.Command.SequenceN , ">= highest promised", replica.ToApply)
-		replica.ToApply = req.Command.SequenceN 
-		replica.HighestSlot.HighestN = req.Command.SequenceN
+	
+	if req.Promise.Number >= replica.HighestSlot.Prep{
+		log.Println("Sequence", req.Promise.Number , ">= highest promised", replica.HighestSlot.Promise.Number)
+		replica.HighestSlot.Prep = req.Promise.Number 
+		replica.HighestSlot.Promise.Number = req.Promise.Number
 		replica.HighestSlot.Command.Command = req.Command.Command
 
 		*res = replica.HighestSlot
 		res.Decided = true
-		req.Command.SequenceN ++
+	
 	} else {
-		log.Println("Sequence", req.Command.SequenceN , "is NOT >= highest promised", replica.HighestSlot.HighestN)
+		log.Println("Sequence", req.Promise.Number , "is NOT >= highest promised", replica.HighestSlot.Promise.Number)
 		res.Decided = false
 		*res = replica.HighestSlot
 	}
@@ -175,10 +174,10 @@ func (replica *Replica) Decide(req Slot, res *Nothing) error {
 	empty := "[EMPTY]"
 
 	replica.ToApply = -1
-	replica.HighestSlot.Command.SequenceN = -1
+	replica.HighestSlot.Promise.Number = -1
 
 	commands := strings.Fields(req.Command.Command)
-	log.Printf("cell: %v, highestN: %v", replica.Cell, req.HighestN)
+
 	if len(replica.Cell) == req.HighestN{
 		
 		replica.HighestSlot.HighestN ++
@@ -188,7 +187,7 @@ func (replica *Replica) Decide(req Slot, res *Nothing) error {
 	
 		}else{
 
-			replica.Cell = append(replica.Cell, commands[1]+commands[2])
+			replica.Cell = append(replica.Cell, commands[1] + " " + commands[2])
 	
 		}
 		switch commands[0]{
@@ -214,11 +213,21 @@ func (replica *Replica) Decide(req Slot, res *Nothing) error {
 		}
 	}else{
 
-		if replica.Cell[req.HighestN] == empty{
+		/*
+
+		look at the value of highestn and toapply. the mix up of the sequence values
+		that are being tracked.  Relook or review the way .toapply and highestn is being used.
+		
+		the error that is being triggered is a -1 in the index value on line 217
+
+		*/
+		
+		//fmt.Println(empty,req.HighestN)
+		if replica.Cell[req.HighestN] == empty{ // this is where the problem 
 			replica.Cell[req.HighestN] = req.Command.Command
-			replica.HighestSlot.HighestN ++
+			replica.ToApply ++
 			if replica.Cell[0] == empty{
-				replica.HighestSlot.HighestN = 0
+				replica.ToApply = 0
 			}
 
 		}

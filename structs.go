@@ -33,12 +33,12 @@ type Slot struct {
 	Command  	Command 	//`json:"command"`
 	Promise  	Sequence 	//`json:"sequence"`
 	Accepted 	Command 	//`json:"accepted"`
-	HighestN 	int 		//`json:"highest_n"`
+	Prep 	 	int 		//`json:"highest_n"`
+	HighestN    int
 }
 
 // Command struct
 type Command struct {
-	SequenceN int
 	Address   string
 	Command   string
 	Tag       int

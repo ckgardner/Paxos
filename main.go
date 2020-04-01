@@ -16,9 +16,9 @@ func main() {
 	replica := new(Replica)
 	replica.Database = make(map[string]string)
 	replica.Kill = make(chan struct{})
-	replica.HighestSlot.HighestN = 0
-	replica.ToApply = -1
-	replica.HighestSlot.Command.SequenceN = -1
+	replica.ToApply = 0
+	replica.HighestSlot.Prep = -1
+	replica.HighestSlot.HighestN = -1
 	args := os.Args
 	args = os.Args[1:]
 	if len(args) < 3{
@@ -34,9 +34,6 @@ func main() {
 			replica.portAddress = append(replica.portAddress, replica.IP + ":" + port)
 		}
 	}
-	replica.HighestSlot.HighestN = 0
-	replica.HighestSlot.Accepted.SequenceN = -1
-
 	/* 	path := replica.Cell
 		options :=
 			"?" + "_busy_timout=10000" +
