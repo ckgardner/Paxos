@@ -21,7 +21,7 @@ func mainCommands(replica *Replica) {
 		if len(parts) == 0 {
 			continue
 		}
-		// var nothing *Nothing
+
 
 		switch parts[0] {
 			case "help":
@@ -30,15 +30,6 @@ func mainCommands(replica *Replica) {
 
 			case "put":
 				if len(parts) == 3{
-
-					// pair := Pair{parts[1], parts[2]}
-
-					// if err := call(replica.Address,"Replica.Set", pair, &nothing); err != nil {
-					// 	log.Printf("replica.Set: %v", err)
-					// }else{
-
-					// 	log.Printf("This was inserted to the Node: {%v:%v}", pair.Key, pair.Value)
-					// }
 
 					var item Slot
 					item.Accepted.SequenceN = replica.HighestSlot.Accepted.SequenceN 
@@ -60,19 +51,18 @@ func mainCommands(replica *Replica) {
 
 			case "dump":
 				log.Printf("Port:%v", replica.Port)
-				log.Printf("Cell: =============")
-				for index := range replica.Cell{
-					fmt.Println("\t"+string(replica.Cell[index]))
+				log.Printf("Address:Ports: =============")
+				for index := range replica.portAddress{
+					fmt.Println("\t"+string(replica.portAddress[index]))
 				}
-				log.Println("Database: ============")
-				for key, value := range replica.Database{
-					log.Println(key, "->", value)
-				}
+
 				undecided := replica.HighestSlot.HighestN
 
 				log.Println("Next undecided slot is:", undecided)
-				for slot := range replica.Cell{
-					log.Println("slot=", slot)
+
+				log.Println("Cell: ============")
+				for i, value := range replica.Cell{
+					log.Printf("\t[%v] -> %v\n", int(i) , value)
 				}
 
 			case "quit":

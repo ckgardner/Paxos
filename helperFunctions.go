@@ -7,11 +7,6 @@ import (
 	"strings"
 	"time"
 )
-<<<<<<< HEAD
-=======
-// Prepare, Accept, and Decide need to access the DB instead of map.
-// Propose doesn't modify anything with DB. It does it through RPC calls
->>>>>>> 804ce2335d510f53343beccad4ba4b6623818105
 
 // Propose function
 func Propose(replica *Replica, item Slot) error {
@@ -19,21 +14,21 @@ func Propose(replica *Replica, item Slot) error {
 	var nothing Nothing
 	for !finished {
 		fmt.Println("Starting Proposal Loop")
-		fmt.Println("Highest slot:", replica.ToApply)
+		fmt.Println("Highest slot:", replica.HighestSlot.HighestN)
 		var data Slot
-		data.HighestN = replica.ToApply
-		item.HighestN = replica.ToApply
+		data.HighestN = replica.HighestSlot.HighestN
+		item.HighestN = replica.HighestSlot.HighestN
 		replica.HighestSlot.Accepted.Command = item.Command.Command
 		seen := -1
 		completed := false
 		for !completed {
 			data.Command.Command = replica.HighestSlot.Accepted.Command
-			item.Accepted.SequenceN = seen + 1
-			data.Accepted.SequenceN = seen + 1
+			item.HighestN = seen + 1
+			data.HighestN = seen + 1
 			replica.HighestSlot.Accepted.SequenceN = seen + 1
 			totalOk := 0
 			totalNot := 0
-			for _, add := range replica.Cell {
+			for _, add := range replica.portAddress {
 				time.Sleep(1000 * time.Millisecond) // latency
 				var prepOk Slot
 				fmt.Println("Asking", add)
@@ -53,11 +48,11 @@ func Propose(replica *Replica, item Slot) error {
 						}
 					}
 				}
-				if totalOk > len(replica.Cell)/2 || totalNot > len(replica.Cell)/2 {
+				if totalOk > len(replica.portAddress)/2 || totalNot > len(replica.portAddress)/2 {
 					break
 				}
 			}
-			if totalNot > len(replica.Cell)/2 {
+			if totalNot > len(replica.portAddress)/2 {
 				fmt.Println("Majority declined... retry")
 				time.Sleep(1000 * time.Millisecond) // latency
 				continue
@@ -66,7 +61,7 @@ func Propose(replica *Replica, item Slot) error {
 			var prepOk Slot
 			totalOk = 0
 			totalNot = 0
-			for _, add := range replica.Cell {
+			for _, add := range replica.portAddress {
 				time.Sleep(1000 * time.Millisecond)
 				if err := call(add, "Replica.Accept", data, &prepOk); err != nil {
 					log.Printf("Bad decide call from %v", add)
@@ -79,22 +74,23 @@ func Propose(replica *Replica, item Slot) error {
 					}
 				}
 			}
-			if totalOk > len(replica.Cell)/2 {
+			if totalOk > len(replica.portAddress)/2 {
 				fmt.Println("Got an accept majority. Deciding..")
-				for _, add := range replica.Cell {
+				for _, add := range replica.portAddress {
 					if err := call(add, "Replica.Decide", data, &nothing); err != nil {
 						log.Printf("bad decide call from %v", add)
 					}
 				}
 				if data.Command.Command == item.Command.Command {
-					completed = true
+					finished = true
 				}
 			} else {
 				time.Sleep(1000 * time.Millisecond)
 			}
+
 			completed = true
 		}
-		replica.HighestSlot.HighestN = -1
+		replica.ToApply= -1
 	}
 	return nil
 }
@@ -114,18 +110,20 @@ func (replica *Replica) Prepare(req Slot, res *Slot) error {
 			replica.ToApply = req.HighestN
 			req.Accepted.Command = req.Command.Command
 			res.Decided = true
-	} else{
+			
+		} else{
 
-		fmt.Println(req.Command.SequenceN, replica.ToApply, " Was REJECTED ")
-		*res = replica.HighestSlot
-		res.HighestN = replica.ToApply
-		res.Command.Command = " "
-		res.Decided = false
-	}
+			fmt.Println(req.Command.SequenceN, replica.ToApply, " Was REJECTED ")
+			*res = replica.HighestSlot
+			res.HighestN = replica.ToApply
+			res.Command.Command = " "
+			res.Decided = false
+		}
 
-	res.Command.Command = replica.Cell[req.HighestN]
 	} else {
 
+		res.Command.Command = replica.Cell[req.HighestN]
+	
 		if req.Command.Command == replica.Cell[req.HighestN]{
 
 			res.Decided = true
@@ -135,7 +133,6 @@ func (replica *Replica) Prepare(req Slot, res *Slot) error {
 
 			res.Decided = false
 			log.Println("REJECTED:", req.HighestN, replica.Cell[req.HighestN])
-
 		}
 
 	}
@@ -150,7 +147,7 @@ func (replica *Replica) Accept(req Slot, res *Slot) error {
 	defer replica.Lock.Unlock()
 	log.Println("=====", replica.Address, "Accepting..")
 	
-	if req.Command.SequenceN >= replica.ToApply {
+	if req.Command.SequenceN >= replica.HighestSlot.HighestN {
 
 		log.Println("Sequence", req.Command.SequenceN , ">= highest promised", replica.HighestSlot.HighestN)
 		replica.ToApply = req.Command.SequenceN 
@@ -170,28 +167,30 @@ func (replica *Replica) Accept(req Slot, res *Slot) error {
 
 // Decide is not an  RPC
 func (replica *Replica) Decide(req Slot, res *Nothing) error {
+	
 	replica.Lock.Lock()
 	defer replica.Lock.Unlock()
 	time.Sleep(1000 * time.Millisecond)
 	empty := "[EMPTY]"
 
 	replica.ToApply = -1
-	replica.HighestSlot.HighestN = -1
+	replica.HighestSlot.Command.SequenceN = -1
 
 	commands := strings.Fields(req.Command.Command)
-
 	if len(replica.Cell) == req.HighestN{
-		replica.ToApply ++
+		
+		replica.HighestSlot.HighestN ++
 		if req.HighestN > 0 && replica.Cell[req.HighestN - 1] == empty{
 
 			replica.Cell = append(replica.Cell,empty)
-
+	
 		}else{
 
 			replica.Cell = append(replica.Cell,req.Command.Command)
+	
 		}
 		switch commands[0]{
-
+		
 		case "put" :
 			replica.Database[commands[1]] = commands[2]
 			fmt.Printf("Adding to key/value pair: [%v] set to [%v]", commands[1], commands[2])
@@ -215,9 +214,9 @@ func (replica *Replica) Decide(req Slot, res *Nothing) error {
 
 		if replica.Cell[req.HighestN] == empty{
 			replica.Cell[req.HighestN] = req.Command.Command
-			replica.ToApply ++
+			replica.HighestSlot.HighestN ++
 			if replica.Cell[0] == empty{
-				replica.ToApply = 0
+				replica.HighestSlot.HighestN = 0
 			}
 
 		}

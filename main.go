@@ -4,7 +4,7 @@ import (
 	"os"
 	"fmt"
 	"log"
-	_ "github.com/mattn/go-sqlite3"
+	//"github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -31,7 +31,7 @@ func main() {
 		// replica.Cell = args
 		fmt.Println("My Replica Address: ", replica.Address)
 		for _,port := range args{
-			replica.Cell = append(replica.Cell, replica.IP + ":" + port)
+			replica.portAddress = append(replica.portAddress, replica.IP + ":" + port)
 		}
 	}
 	replica.HighestSlot.HighestN = 0

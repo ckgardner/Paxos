@@ -12,6 +12,7 @@ type Replica struct {
 	// Slots       []Slot
 	Address     string
 	Cell        []string
+	portAddress []string
 	ToApply     int
 	Listeners   map[string]chan string
 	Lock        sync.Mutex
@@ -28,11 +29,11 @@ type Pair struct {
 // Slot is used when accepted
 type Slot struct {
 	//ID		int `json:"id"`
-	Decided  	bool 		`json:"decided"`
-	Command  	Command 	`json:"command"`
-	Promise  	Sequence 	`json:"sequence"`
-	Accepted 	Command 	`json:"accepted"`
-	HighestN 	int 		`json:"highest_n"`
+	Decided  	bool 		//`json:"decided"`
+	Command  	Command 	//`json:"command"`
+	Promise  	Sequence 	//`json:"sequence"`
+	Accepted 	Command 	//`json:"accepted"`
+	HighestN 	int 		//`json:"highest_n"`
 }
 
 // Command struct
