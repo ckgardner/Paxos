@@ -220,9 +220,10 @@ func (replica *Replica) Accept(req AllRequests, res *Response) error {
 			break
 		}
 	}
+	time.Sleep(1000 * time.Millisecond)
 
 	if nTrue >= haveMajority(len(replica.Cell)) {
-		fmt.Println("Received enough votes")
+		fmt.Println("Received enough votes!")
 		for _, v := range replica.Cell {
 			go func(v string, slot Slot, command Command) {
 				req := AllRequests{Address: replica.Address, Decide: DecideRequest{Slot: slot, Value: command}}
@@ -238,7 +239,7 @@ func (replica *Replica) Accept(req AllRequests, res *Response) error {
 		return nil
 	}
 
-	fmt.Println("Not enough votes start over dummy!")
+	fmt.Println("Not enough votes!")
 	aV.Sequence.Number = highestN + 1
 
 	duration := float64(5)
@@ -345,8 +346,8 @@ func (replica *Replica) Decide(req AllRequests, resp *Response) error {
 	return nil
 }
 
-func call(address string, method string, request interface{}, reply interface{}) error {
-	client, err := rpc.DialHTTP("tcp", address)
+func call(address, method string, request AllRequests, reply *Response) error {
+	client, err := rpc.DialHTTP("tcp", getAddress(address))
 	if err != nil {
 		log.Printf("rpc.DialHTTP: %v", err)
 		return err
@@ -358,7 +359,6 @@ func call(address string, method string, request interface{}, reply interface{})
 		log.Printf("client.Call %s: %v", method, err)
 		return err
 	}
-
 	return nil
 }
 

@@ -17,12 +17,6 @@ type Replica struct {
 	Kill        chan struct{}
 }
 
-// Pair is a Key-Value pair
-type Pair struct {
-	Key   string
-	Value string
-}
-
 // Slot is used when accepted
 type Slot struct {
 	//ID		int `json:"id"`
