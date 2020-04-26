@@ -2,28 +2,7 @@ package main
 
 import(
     "net"
-    "net/rpc"
-    "net/http"
-    "log"
-    "fmt"
 )
-func server(replica *Replica) {
-	location := replica.Port
-	rpc.Register(replica)
-	rpc.HandleHTTP()
-	listener, err := net.Listen("tcp", location)
-	if err != nil {
-		log.Fatal("Error thrown while listening: ", err)
-	}
-	fmt.Printf("Listening %v\n", location)
-
-	go func() {
-		if err := http.Serve(listener, nil); err != nil {
-			log.Fatalf("Serving: %v", err)
-		}
-	}()
-	fmt.Println("Server is on")
-}
 
 
 func getLocalAddress() string {
@@ -57,4 +36,8 @@ func getLocalAddress() string {
     }
 
     return localaddress
+}
+
+func getAddress(address string) string {
+	return net.JoinHostPort("localhost", address)
 }

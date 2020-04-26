@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"strconv"
+	"time"
 )
 
 func mainCommands(replica *Replica) {
@@ -14,56 +16,95 @@ func mainCommands(replica *Replica) {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		line := scanner.Text()
-		line = strings.TrimSpace(line)
-
-		parts := strings.SplitN(line, " ", 3)
-		if len(parts) == 0 {
-			continue
-		}
-
-
-		switch parts[0] {
+		userCommand := strings.Split(scanner.Text(), " ")
+		switch userCommand[0] {
 			case "help":
 				fmt.Println("Usable Commands:")
-				fmt.Println("get, put, delete, dump, quit")
+				fmt.Println("get, put, delete, dumpall, quit")
 
 			case "put":
-				if len(parts) == 3{
+				var command Command
+				command.Command = strings.Join(userCommand, " ")
+				command.Address = replica.Address
+				command.Tag, _ = strconv.ParseInt(strconv.FormatInt(time.Now().Unix(), 10)+command.Address, 10, 64)
+				respChan := make(chan string, 1)
+				key := strconv.FormatInt(command.Tag, 10) + command.Address
+				command.Key = key
+				replica.Listeners[key] = respChan
 
-					var item Slot
-					item.HighestN = replica.ToApply 
-					item.Command.Command = line
-					item.Command.Address = replica.Address
-					if err := Propose(replica,item); err != nil{
-						log.Println("Did not set key/value pair")
-					}else{
-						log.Println("Complete")
-					}
+				req := AllRequests{Address: replica.Address, Propose: ProposeRequest{Command: command}}
+				var resp Response
+				err := call(replica.Address, "Propose", req, &resp)
+				if err != nil {
+					log.Fatal("Propose")
+					continue
+				}
 
-				}else{
-					log.Println("Put needs <key> <value> pair")
-				 }
+				go func() {
+					fmt.Println("Finished " + <-replica.Listeners[key])
+				}()
+				break
 
 			case "get":
+				var command Command
+				command.Command = strings.Join(userCommand, " ")
+				command.Address = replica.Address
+				// Assign the command a tag
+				command.Tag, _ = strconv.ParseInt(strconv.FormatInt(time.Now().Unix(), 10)+command.Address, 10, 64)
+				// create a string channel with capacity 1 where the response to the command can be communicated back to the shell code that issued the command
+				respChan := make(chan string, 1)
+				// store the channel in a map associated with the entire replica. it should map the address and tag number (combined into a string) to the channel
+				key := strconv.FormatInt(command.Tag, 10) + command.Address
+				command.Key = key
+				replica.Listeners[key] = respChan
+
+				req := AllRequests{Address: replica.Address, Propose: ProposeRequest{Command: command}}
+				var resp Response
+				err := call(replica.Address, "Propose", req, &resp)
+				if err != nil {
+					log.Fatal("Propose")
+					continue
+				}
+
+				go func() {
+					fmt.Println("Finished " + <-replica.Listeners[key])
+				}()
+				break
 
 			case "delete":
+				var command Command
+				command.Command = strings.Join(userCommand, " ")
+				command.Address = replica.Address
+				command.Tag, _ = strconv.ParseInt(strconv.FormatInt(time.Now().Unix(), 10)+command.Address, 10, 64)
+				respChan := make(chan string, 1)
+				key := strconv.FormatInt(command.Tag, 10) + command.Address
+				command.Key = key
+				replica.Listeners[key] = respChan
+
+				req := AllRequests{Address: replica.Address, Propose: ProposeRequest{Command: command}}
+				var resp Response
+				err := call(replica.Address, "Propose", req, &resp)
+				if err != nil {
+					log.Fatal("Propose")
+					continue
+				}
+
+				go func() {
+					log.Println("Finished " + <-replica.Listeners[key])
+				}()
+				break
 
 			case "dump":
-				log.Printf("Port:%v", replica.Port)
-				log.Printf("Address:Ports: =============")
-				for index := range replica.portAddress{
-					fmt.Println("\t"+string(replica.portAddress[index]))
+				for _, v := range replica.Cell {
+					var resp Response
+					var req AllRequests
+					err := call(v, "Dump", req, &resp)
+					if err != nil {
+						log.Fatal("dump")
+						continue
+					}
 				}
-
-				undecided := replica.HighestSlot.HighestN
-
-				log.Println("Next undecided slot is:", undecided)
-
-				log.Println("DB: ============")
-				for i, value := range replica.Cell{
-					log.Printf("\t|%v| %v|\n", i , value)
-				}
+				break
 
 			case "quit":
 				if len(replica.Cell) == 1{
@@ -74,10 +115,9 @@ func mainCommands(replica *Replica) {
 			default:
 				log.Printf("I don't recognize this command")
 			}
-		}
-		if err := scanner.Err(); err != nil {
-			fmt.Printf("Error in main command loop: %v", err)
+			if err := scanner.Err(); err != nil {
+				fmt.Printf("Error in main command loop: %v", err)
+			}
 		}
 	}
 	
-
